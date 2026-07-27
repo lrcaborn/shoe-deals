@@ -8,14 +8,4 @@
       "runtime": "nodejs20.x"
     }
   },
-  "env": {
-    "SUPABASE_URL": "@supabase-url",
-    "SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "UPSTASH_REDIS_REST_URL": "@upstash-redis-rest-url",
-    "UPSTASH_REDIS_REST_TOKEN": "@upstash-redis-rest-token",
-    "RAKUTEN_MID": "@rakuten-mid",
-    "CJ_PID": "@cj-pid",
-    "IMPACT_IRCLICKID": "@impact-irclickid",
-    "MEC_AFFID": "@mec-affid"
-  }
 }
