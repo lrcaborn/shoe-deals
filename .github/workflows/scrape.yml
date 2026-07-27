@@ -1,0 +1,61 @@
+name: Scrape Running Shoe Prices
+
+on:
+  schedule:
+    # 6am ET daily (UTC-4 in summer, UTC-5 in winter — use 11:00 UTC as safe middle)
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      DEVELOPER_ALERT_EMAIL: ${{ secrets.DEVELOPER_ALERT_EMAIL }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('scraper/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
+        run: |
+          cd scraper
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers (Chromium only)
+        run: |
+          cd scraper
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: Run scrapers
+        run: |
+          cd scraper
+          python main.py
+
+      - name: Detect price drops and send alerts
+        run: |
+          cd scraper
+          python detect_drops.py
+
+      - name: Clean up old price history (90-day rolling window)
+        run: |
+          cd scraper
+          python cleanup.py
