@@ -6,12 +6,12 @@ import httpx
 from bs4 import BeautifulSoup
 from base_scraper import BaseScraper, random_delay, USER_AGENTS
 
-BASE_URL = "https://shop.runningroom.com/en-ca/running-shoes"
+BASE_URL = "https://www.runningroom.com/en-ca/running-shoes"
 
 
 class RunningRoomScraper(BaseScraper):
     retailer_name = "Running Room"
-    retailer_website = "https://shop.runningroom.com"
+    retailer_website = "https://www.runningroom.com"
     retailer_lat = 43.6629
     retailer_lng = -79.3957
     retailer_city = "Toronto"
@@ -50,7 +50,7 @@ class RunningRoomScraper(BaseScraper):
                         products.append({
                             "name": name_el.get_text(strip=True),
                             "brand": brand_el.get_text(strip=True) if brand_el else "",
-                            "url": href if href.startswith("http") else f"https://shop.runningroom.com{href}",
+                            "url": href if href.startswith("http") else f"https://www.runningroom.com{href}",
                             "image_url": image_url,
                             "price": orig_el.get_text(strip=True) if orig_el else price_el.get_text(strip=True) if price_el else None,
                             "sale_price": price_el.get_text(strip=True) if orig_el else None,

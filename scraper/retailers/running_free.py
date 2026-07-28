@@ -6,7 +6,7 @@ import httpx
 from bs4 import BeautifulSoup
 from base_scraper import BaseScraper, random_delay, USER_AGENTS
 
-BASE_URL = "https://www.runningfree.com/running-shoes"
+BASE_URL = "https://www.runningfree.com/footwear/running-shoes"
 
 
 class RunningFreeScraper(BaseScraper):

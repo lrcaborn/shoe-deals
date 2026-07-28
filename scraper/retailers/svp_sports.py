@@ -1,12 +1,12 @@
 """
-SVP Sports scraper — medium complexity, httpx + BeautifulSoup.
+SVP Sports scraper — uses Shopify JSON API.
 """
 import random
 import httpx
-from bs4 import BeautifulSoup
 from base_scraper import BaseScraper, random_delay, USER_AGENTS
 
-BASE_URL = "https://www.svpsports.ca/collections/running-shoes"
+COLLECTION = "running"
+BASE = "https://www.svpsports.ca"
 
 
 class SVPSportsScraper(BaseScraper):
@@ -23,48 +23,48 @@ class SVPSportsScraper(BaseScraper):
 
         with httpx.Client(headers=headers, follow_redirects=True, timeout=20) as client:
             while True:
-                url = f"{BASE_URL}?page={page}"
+                url = f"{BASE}/collections/{COLLECTION}/products.json?limit=250&page={page}"
                 resp = client.get(url)
+                if resp.status_code == 404:
+                    # Try alternate collection handle
+                    url = f"{BASE}/collections/running-shoes/products.json?limit=250&page={page}"
+                    resp = client.get(url)
                 resp.raise_for_status()
-                soup = BeautifulSoup(resp.text, "lxml")
-
-                cards = soup.select(".product-item, .product-card, .grid-product")
-                if not cards:
+                data = resp.json().get("products", [])
+                if not data:
                     break
 
-                for card in cards:
+                for p in data:
                     try:
-                        link = card.select_one("a[href*='/products/']")
-                        name_el = card.select_one(".product-item__title, .product__title, h3")
-                        brand_el = card.select_one(".vendor, .brand")
-                        price_el = card.select_one(".price-item--sale, .product__price .price")
-                        orig_el = card.select_one(".price-item--regular, .compare-at-price")
-                        img_el = card.select_one("img")
+                        # Filter to running shoes by checking product type or tags
+                        tags = [t.lower() for t in p.get("tags", [])]
+                        ptype = (p.get("product_type") or "").lower()
+                        if not any(kw in ptype or kw in " ".join(tags) for kw in ["running", "shoe", "footwear"]):
+                            if not any(kw in p["title"].lower() for kw in ["shoe", "runner", "running"]):
+                                continue
 
-                        if not link or not name_el:
+                        variant = next((v for v in p["variants"] if v.get("available")), p["variants"][0] if p["variants"] else None)
+                        if not variant:
                             continue
 
-                        href = link.get("href", "")
-                        product_url = href if href.startswith("http") else f"https://www.svpsports.ca{href}"
-                        image_url = None
-                        if img_el:
-                            src = img_el.get("src") or img_el.get("data-src") or ""
-                            image_url = src if src.startswith("http") else f"https:{src}"
+                        price = variant.get("compare_at_price") or variant.get("price")
+                        sale_price = variant.get("price") if variant.get("compare_at_price") else None
+                        image_url = p["images"][0]["src"] if p.get("images") else None
 
                         products.append({
-                            "name": name_el.get_text(strip=True),
-                            "brand": brand_el.get_text(strip=True) if brand_el else "",
-                            "url": product_url,
+                            "name": p["title"],
+                            "brand": p.get("vendor", ""),
+                            "url": f"{BASE}/products/{p['handle']}",
                             "image_url": image_url,
-                            "price": orig_el.get_text(strip=True) if orig_el else price_el.get_text(strip=True) if price_el else None,
-                            "sale_price": price_el.get_text(strip=True) if orig_el else None,
-                            "in_stock": "sold-out" not in " ".join(card.get("class", [])),
+                            "price": price,
+                            "sale_price": sale_price,
+                            "in_stock": any(v.get("available") for v in p["variants"]),
                             "category": "road",
                         })
                     except Exception as e:
-                        print(f"[SVP Sports] Card parse error: {e}")
+                        print(f"[SVP Sports] Product parse error: {e}")
 
-                if len(cards) < 24:
+                if len(data) < 250:
                     break
                 page += 1
                 random_delay()

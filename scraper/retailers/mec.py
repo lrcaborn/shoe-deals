@@ -7,7 +7,7 @@ import httpx
 from bs4 import BeautifulSoup
 from base_scraper import BaseScraper, random_delay, USER_AGENTS
 
-BASE_URL = "https://www.mec.ca/en/products/footwear/shoes/running-shoes/N-6xZ1z13wm7"
+BASE_URL = "https://www.mec.ca/en/c/running-shoes"
 
 
 class MECScraper(BaseScraper):
@@ -22,12 +22,15 @@ class MECScraper(BaseScraper):
         headers = {
             "User-Agent": random.choice(USER_AGENTS),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-CA,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Cache-Control": "no-cache",
         }
         page = 1
 
         with httpx.Client(headers=headers, follow_redirects=True, timeout=20) as client:
             while True:
-                url = f"{BASE_URL}?currentPage={page}&pageSize=48"
+                url = f"{BASE_URL}?page={page}"
                 resp = client.get(url)
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "lxml")

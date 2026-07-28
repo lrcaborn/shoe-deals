@@ -21,6 +21,12 @@ class NewBalanceScraper(BaseScraper):
         headers = {
             "User-Agent": random.choice(USER_AGENTS),
             "Accept-Language": "en-CA,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Cache-Control": "no-cache",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
         }
         start = 0
         page_size = 48
