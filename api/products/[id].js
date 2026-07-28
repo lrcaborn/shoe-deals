@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { applyRateLimit } from '../../lib/rateLimit.js'
-import { applyAffiliateTag } from '../../lib/affiliates.js'
+import { applyRateLimit } from '../lib/rateLimit.js'
+import { applyAffiliateTag } from '../lib/affiliates.js'
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
