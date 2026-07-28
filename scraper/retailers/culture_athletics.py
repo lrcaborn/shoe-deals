@@ -5,7 +5,7 @@ import random
 import httpx
 from base_scraper import BaseScraper, random_delay, USER_AGENTS
 
-COLLECTION = "running-shoes"
+COLLECTION = "all"
 BASE = "https://www.cultureathletics.com"
 
 
@@ -32,6 +32,12 @@ class CultureAthleticsScraper(BaseScraper):
 
                 for p in data:
                     try:
+                        # Filter to footwear only
+                        ptype = (p.get("product_type") or "").lower()
+                        tags = " ".join(p.get("tags") or []).lower()
+                        if not any(kw in ptype or kw in tags for kw in ["shoe", "footwear", "running"]):
+                            continue
+
                         variant = next((v for v in p["variants"] if v.get("available")), p["variants"][0] if p["variants"] else None)
                         if not variant:
                             continue
@@ -52,6 +58,7 @@ class CultureAthleticsScraper(BaseScraper):
                         })
                     except Exception as e:
                         print(f"[Culture Athletics] Product parse error: {e}")
+
 
                 if len(data) < 250:
                     break
