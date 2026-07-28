@@ -17,9 +17,9 @@ CATEGORY_URLS = [
 class RunningFreeScraper(BaseScraper):
     retailer_name = "Running Free"
     retailer_website = "https://www.runningfree.com"
-    retailer_lat = 43.7615
-    retailer_lng = -79.3300
-    retailer_city = "Toronto"
+    retailer_lat = 43.8254
+    retailer_lng = -79.3378
+    retailer_city = "Markham"
 
     def scrape(self) -> list[dict]:
         seen_urls = set()

@@ -14,8 +14,8 @@ BASE = "https://www.therunnersshop.com"
 class RunnersShopScraper(BaseScraper):
     retailer_name = "The Runners Shop"
     retailer_website = "https://www.therunnersshop.com"
-    retailer_lat = 43.6740
-    retailer_lng = -79.3989
+    retailer_lat = 43.6666
+    retailer_lng = -79.4028
     retailer_city = "Toronto"
 
     def scrape(self) -> list[dict]:

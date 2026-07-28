@@ -18,8 +18,8 @@ URLS_TO_TRY = [
 class SportChekScraper(BaseScraper):
     retailer_name = "Sport Chek"
     retailer_website = "https://www.sportchek.ca"
-    retailer_lat = 43.6461
-    retailer_lng = -79.3802
+    retailer_lat = 43.6534
+    retailer_lng = -79.3803
     retailer_city = "Toronto"
 
     def scrape(self) -> list[dict]:

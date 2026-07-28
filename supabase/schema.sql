@@ -187,16 +187,20 @@ $$;
 -- ============================================================
 
 insert into retailers (name, website, lat, lng, city) values
-  ('Sport Chek',         'https://www.sportchek.ca',           43.6461, -79.3802, 'Toronto'),
-  ('Sporting Life',      'https://www.sportinglife.ca',        43.6850, -79.4010, 'Toronto'),
-  ('Running Room',       'https://shop.runningroom.com',       43.6629, -79.3957, 'Toronto'),
-  ('BlackToe Running',   'https://www.blacktoerunning.com',    43.6465, -79.4042, 'Toronto'),
-  ('The Runners Shop',   'https://www.therunnersshop.com',     43.6740, -79.3989, 'Toronto'),
-  ('Running Free',       'https://www.runningfree.com',        43.7615, -79.3300, 'Toronto'),
-  ('SVP Sports',         'https://www.svpsports.ca',           43.7731, -79.4144, 'North York'),
-  ('MEC',                'https://www.mec.ca',                 43.6449, -79.3985, 'Toronto'),
-  ('New Balance CA',     'https://www.newbalance.com/en-ca',   43.6532, -79.3832, 'Toronto'),
+  ('Sport Chek',         'https://www.sportchek.ca',           43.6534, -79.3803, 'Toronto'),
+  ('Sporting Life',      'https://www.sportinglife.ca',        43.7116, -79.3975, 'Toronto'),
+  ('Running Room',       'https://www.runningroom.com',        43.7108, -79.3975, 'Toronto'),
+  ('BlackToe Running',   'https://www.blacktoerunning.com',    43.6444, -79.4028, 'Toronto'),
+  ('The Runners Shop',   'https://www.therunnersshop.com',     43.6666, -79.4028, 'Toronto'),
+  ('Running Free',       'https://www.runningfree.com',        43.8254, -79.3378, 'Markham'),
+  ('SVP Sports',         'https://www.svpsports.ca',           43.7099, -79.4516, 'Toronto'),
+  ('MEC',                'https://www.mec.ca',                 43.6503, -79.3924, 'Toronto'),
+  ('New Balance',        'https://www.newbalance.com/en-CA',   43.6483, -79.3833, 'Toronto'),
   ('HOKA',               'https://www.hoka.com/en-ca',         43.6532, -79.3832, 'Toronto'),
   ('Nike CA',            'https://www.nike.com/ca',            43.6532, -79.3832, 'Toronto'),
-  ('Culture Athletics',  'https://www.cultureathletics.com',   43.6449, -79.4017, 'Toronto')
-on conflict (name) do nothing;
+  ('Culture Athletics',  'https://www.cultureathletics.com',   43.6614, -79.3339, 'Toronto')
+on conflict (name) do update set
+  website = excluded.website,
+  lat     = excluded.lat,
+  lng     = excluded.lng,
+  city    = excluded.city;

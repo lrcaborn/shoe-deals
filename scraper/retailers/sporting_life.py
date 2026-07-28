@@ -13,8 +13,8 @@ CATEGORY_URL = f"{BASE}/en-CA/running/footwear/"
 class SportingLifeScraper(BaseScraper):
     retailer_name = "Sporting Life"
     retailer_website = "https://www.sportinglife.ca"
-    retailer_lat = 43.6850
-    retailer_lng = -79.4010
+    retailer_lat = 43.7116
+    retailer_lng = -79.3975
     retailer_city = "Toronto"
 
     def scrape(self) -> list[dict]:

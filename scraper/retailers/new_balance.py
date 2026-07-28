@@ -18,8 +18,8 @@ URLS_TO_TRY = [
 class NewBalanceScraper(BaseScraper):
     retailer_name = "New Balance"
     retailer_website = "https://www.newbalance.com/en-CA"
-    retailer_lat = 43.6532
-    retailer_lng = -79.3832
+    retailer_lat = 43.6483
+    retailer_lng = -79.3833
     retailer_city = "Toronto"
 
     def scrape(self) -> list[dict]:

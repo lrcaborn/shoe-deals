@@ -19,8 +19,8 @@ URLS_TO_TRY = [
 class RunningRoomScraper(BaseScraper):
     retailer_name = "Running Room"
     retailer_website = "https://www.runningroom.com"
-    retailer_lat = 43.6629
-    retailer_lng = -79.3957
+    retailer_lat = 43.7108
+    retailer_lng = -79.3975
     retailer_city = "Toronto"
 
     def scrape(self) -> list[dict]:

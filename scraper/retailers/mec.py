@@ -14,8 +14,8 @@ URL = f"{BASE}/en/products/running/running-and-training-footwear/running-shoes"
 class MECScraper(BaseScraper):
     retailer_name = "MEC"
     retailer_website = "https://www.mec.ca"
-    retailer_lat = 43.6472
-    retailer_lng = -79.3890
+    retailer_lat = 43.6503
+    retailer_lng = -79.3924
     retailer_city = "Toronto"
 
     def scrape(self) -> list[dict]:

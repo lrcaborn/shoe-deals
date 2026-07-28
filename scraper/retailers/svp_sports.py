@@ -14,9 +14,9 @@ COLLECTIONS = ["running", "running-shoes", "footwear-running", "footwear"]
 class SVPSportsScraper(BaseScraper):
     retailer_name = "SVP Sports"
     retailer_website = "https://www.svpsports.ca"
-    retailer_lat = 43.7731
-    retailer_lng = -79.4144
-    retailer_city = "North York"
+    retailer_lat = 43.7099
+    retailer_lng = -79.4516
+    retailer_city = "Toronto"
 
     def scrape(self) -> list[dict]:
         products = []
