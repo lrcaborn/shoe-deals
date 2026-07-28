@@ -47,16 +47,21 @@ export async function checkRateLimit(req) {
  * Returns true if the handler should continue, false if it already responded.
  */
 export async function applyRateLimit(req, res) {
-  const { allowed, remaining, resetIn } = await checkRateLimit(req)
+  try {
+    const { allowed, remaining, resetIn } = await checkRateLimit(req)
 
-  res.setHeader('X-RateLimit-Limit', MAX_REQUESTS)
-  res.setHeader('X-RateLimit-Remaining', remaining)
-  res.setHeader('X-RateLimit-Reset', resetIn)
+    res.setHeader('X-RateLimit-Limit', MAX_REQUESTS)
+    res.setHeader('X-RateLimit-Remaining', remaining)
+    res.setHeader('X-RateLimit-Reset', resetIn)
 
-  if (!allowed) {
-    res.setHeader('Retry-After', resetIn)
-    res.status(429).json({ error: 'Too many requests', retryAfter: resetIn })
-    return false
+    if (!allowed) {
+      res.setHeader('Retry-After', resetIn)
+      res.status(429).json({ error: 'Too many requests', retryAfter: resetIn })
+      return false
+    }
+  } catch (err) {
+    // Redis unavailable — fail open so the API keeps working
+    console.error('Rate limit check failed:', err)
   }
 
   return true
