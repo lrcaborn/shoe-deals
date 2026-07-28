@@ -7,7 +7,7 @@ import httpx
 from bs4 import BeautifulSoup
 from base_scraper import BaseScraper, random_delay, USER_AGENTS
 
-BASE_URL = "https://www.mec.ca/en/c/running-shoes"
+BASE_URL = "https://www.mec.ca/en/products/running/running-and-training-footwear/running-shoes"
 
 
 class MECScraper(BaseScraper):
