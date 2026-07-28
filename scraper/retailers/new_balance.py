@@ -1,80 +1,92 @@
 """
-New Balance Canada scraper — medium complexity, httpx + BeautifulSoup.
+New Balance Canada scraper — uses Playwright to bypass bot protection.
 """
-import random
-import httpx
-from bs4 import BeautifulSoup
-from base_scraper import BaseScraper, random_delay, USER_AGENTS
+from playwright.sync_api import sync_playwright
+from base_scraper import BaseScraper, parse_price
 
-BASE_URL = "https://www.newbalance.com/en-ca/running-shoes/"
+BASE = "https://www.newbalance.com"
+URL = f"{BASE}/en-CA/mens-running-shoes/?start=0&sz=96"
 
 
 class NewBalanceScraper(BaseScraper):
-    retailer_name = "New Balance CA"
-    retailer_website = "https://www.newbalance.com/en-ca"
+    retailer_name = "New Balance"
+    retailer_website = "https://www.newbalance.com/en-CA"
     retailer_lat = 43.6532
     retailer_lng = -79.3832
     retailer_city = "Toronto"
 
     def scrape(self) -> list[dict]:
         products = []
-        headers = {
-            "User-Agent": random.choice(USER_AGENTS),
-            "Accept-Language": "en-CA,en;q=0.9",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Cache-Control": "no-cache",
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "none",
-        }
-        start = 0
-        page_size = 48
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            ctx = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 800},
+                locale="en-CA",
+            )
+            page = ctx.new_page()
 
-        with httpx.Client(headers=headers, follow_redirects=True, timeout=20) as client:
-            while True:
-                url = f"{BASE_URL}?start={start}&sz={page_size}"
-                resp = client.get(url)
-                resp.raise_for_status()
-                soup = BeautifulSoup(resp.text, "lxml")
+            try:
+                page.goto(URL, wait_until="networkidle", timeout=30000)
+                page.wait_for_timeout(3000)
 
-                cards = soup.select(".product-tile, [class*='product-tile'], .grid-tile")
-                if not cards:
-                    break
+                consent = page.query_selector('button[id*="accept"], button:has-text("Accept All"), button:has-text("Accept Cookies")')
+                if consent:
+                    consent.click()
+                    page.wait_for_timeout(1000)
+
+                for _ in range(5):
+                    more = page.query_selector('button:has-text("Load More"), [data-testid="load-more"]')
+                    if not more:
+                        break
+                    more.click()
+                    page.wait_for_timeout(2000)
+
+                cards = page.query_selector_all('.product-tile, [class*="ProductTile"], [class*="product-grid-tile"], li.grid-tile')
+                print(f"[New Balance] Found {len(cards)} product cards")
 
                 for card in cards:
                     try:
-                        link = card.select_one("a.thumb-link, a.product-tile__link")
-                        name_el = card.select_one(".product-tile__title, .product-name")
-                        price_el = card.select_one(".product-tile__pricing .sales .value, .price-sales")
-                        orig_el = card.select_one(".product-tile__pricing .strike-through .value, .price-standard")
-                        img_el = card.select_one("img.product-tile__image, img[data-src]")
-
-                        if not link or not name_el:
+                        name_el = card.query_selector('.pdp-link a, [class*="product-name"], h3, h4')
+                        name = name_el.inner_text().strip() if name_el else ""
+                        if not name:
                             continue
 
-                        href = link.get("href", "")
-                        product_url = href if href.startswith("http") else f"https://www.newbalance.com{href}"
-                        image_url = None
-                        if img_el:
-                            image_url = img_el.get("src") or img_el.get("data-src")
+                        link_el = card.query_selector("a[href]")
+                        href = link_el.get_attribute("href") if link_el else ""
+                        url = href if href.startswith("http") else BASE + href
+
+                        img_el = card.query_selector("img[src], img[data-src]")
+                        image_url = (img_el.get_attribute("src") or img_el.get_attribute("data-src")) if img_el else None
+
+                        price_el = card.query_selector('[class*="price-standard"], del, [class*="original"]')
+                        sale_el = card.query_selector('[class*="price-sales"], [class*="sale-price"], ins')
+
+                        if price_el and sale_el:
+                            price = parse_price(price_el.inner_text())
+                            sale_price = parse_price(sale_el.inner_text())
+                        else:
+                            any_price = card.query_selector('[class*="price"]')
+                            price = parse_price(any_price.inner_text()) if any_price else None
+                            sale_price = None
+
+                        if price is None:
+                            continue
 
                         products.append({
-                            "name": name_el.get_text(strip=True),
+                            "name": name,
                             "brand": "New Balance",
-                            "url": product_url,
+                            "url": url,
                             "image_url": image_url,
-                            "price": orig_el.get("content") or orig_el.get_text(strip=True) if orig_el else price_el.get("content") or price_el.get_text(strip=True) if price_el else None,
-                            "sale_price": price_el.get("content") or price_el.get_text(strip=True) if orig_el else None,
-                            "in_stock": card.select_one(".product-tile__availability--unavailable") is None,
+                            "price": price,
+                            "sale_price": sale_price,
+                            "in_stock": True,
                             "category": "road",
                         })
                     except Exception as e:
-                        print(f"[New Balance CA] Card parse error: {e}")
+                        print(f"[New Balance] Product parse error: {e}")
 
-                if len(cards) < page_size:
-                    break
-                start += page_size
-                random_delay()
+            finally:
+                browser.close()
 
         return products

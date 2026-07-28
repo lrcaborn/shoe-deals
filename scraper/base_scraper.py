@@ -63,6 +63,21 @@ def random_delay(min_s: float = 2.0, max_s: float = 5.0):
     time.sleep(random.uniform(min_s, max_s))
 
 
+def http_get_with_retry(client, url: str, max_retries: int = 3, backoff: float = 10.0):
+    """GET with retry on 429/5xx. Raises on final failure."""
+    import httpx
+    for attempt in range(1, max_retries + 1):
+        resp = client.get(url)
+        if resp.status_code == 429:
+            wait = backoff * attempt
+            print(f"  429 on {url} — waiting {wait}s before retry {attempt}/{max_retries}")
+            time.sleep(wait)
+            continue
+        resp.raise_for_status()
+        return resp
+    raise Exception(f"Failed after {max_retries} retries: {url}")
+
+
 def get_supabase() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 

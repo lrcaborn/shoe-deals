@@ -3,7 +3,7 @@ BlackToe Running scraper — uses Shopify JSON API.
 """
 import random
 import httpx
-from base_scraper import BaseScraper, random_delay, USER_AGENTS
+from base_scraper import BaseScraper, random_delay, http_get_with_retry, USER_AGENTS
 
 COLLECTION = "running-shoes"
 BASE = "https://www.blacktoerunning.com"
@@ -20,12 +20,12 @@ class BlackToeScraper(BaseScraper):
         products = []
         headers = {"User-Agent": random.choice(USER_AGENTS)}
         page = 1
+        random_delay(3, 6)
 
         with httpx.Client(headers=headers, follow_redirects=True, timeout=20) as client:
             while True:
                 url = f"{BASE}/collections/{COLLECTION}/products.json?limit=250&page={page}"
-                resp = client.get(url)
-                resp.raise_for_status()
+                resp = http_get_with_retry(client, url)
                 data = resp.json().get("products", [])
                 if not data:
                     break
@@ -35,11 +35,9 @@ class BlackToeScraper(BaseScraper):
                         variant = next((v for v in p["variants"] if v.get("available")), p["variants"][0] if p["variants"] else None)
                         if not variant:
                             continue
-
                         price = variant.get("compare_at_price") or variant.get("price")
                         sale_price = variant.get("price") if variant.get("compare_at_price") else None
                         image_url = p["images"][0]["src"] if p.get("images") else None
-
                         products.append({
                             "name": p["title"],
                             "brand": p.get("vendor", ""),

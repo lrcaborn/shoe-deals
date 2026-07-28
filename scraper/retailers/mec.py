@@ -1,81 +1,89 @@
 """
-MEC scraper — medium complexity, httpx + BeautifulSoup.
-Filters to running shoes only.
+MEC scraper — uses Playwright to bypass bot protection.
 """
-import random
-import httpx
-from bs4 import BeautifulSoup
-from base_scraper import BaseScraper, random_delay, USER_AGENTS
+from playwright.sync_api import sync_playwright
+from base_scraper import BaseScraper, parse_price
 
-BASE_URL = "https://www.mec.ca/en/products/running/running-and-training-footwear/running-shoes"
+BASE = "https://www.mec.ca"
+URL = f"{BASE}/en/products/running/running-and-training-footwear/running-shoes"
 
 
 class MECScraper(BaseScraper):
     retailer_name = "MEC"
     retailer_website = "https://www.mec.ca"
-    retailer_lat = 43.6449
-    retailer_lng = -79.3985
+    retailer_lat = 43.6472
+    retailer_lng = -79.3890
     retailer_city = "Toronto"
 
     def scrape(self) -> list[dict]:
         products = []
-        headers = {
-            "User-Agent": random.choice(USER_AGENTS),
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-CA,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Cache-Control": "no-cache",
-        }
-        page = 1
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            ctx = browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+                viewport={"width": 1280, "height": 800},
+            )
+            page = ctx.new_page()
 
-        with httpx.Client(headers=headers, follow_redirects=True, timeout=20) as client:
-            while True:
-                url = f"{BASE_URL}?page={page}"
-                resp = client.get(url)
-                resp.raise_for_status()
-                soup = BeautifulSoup(resp.text, "lxml")
+            try:
+                page.goto(URL, wait_until="networkidle", timeout=30000)
+                page.wait_for_timeout(3000)
 
-                cards = soup.select("[class*='ProductCard'], .product-card, [data-testid*='product']")
-                if not cards:
-                    # Try alternate selectors for MEC's layout
-                    cards = soup.select("li.product-list-item, .product-grid-item")
-                if not cards:
-                    break
+                for _ in range(10):
+                    btn = page.query_selector('button[aria-label*="load more"], button:has-text("Load More"), button:has-text("Show more")')
+                    if not btn:
+                        break
+                    btn.click()
+                    page.wait_for_timeout(2000)
+
+                cards = page.query_selector_all('[data-testid="product-tile"], .product-tile, article.product-card, [class*="ProductCard"]')
+                print(f"[MEC] Found {len(cards)} product cards")
 
                 for card in cards:
                     try:
-                        link = card.select_one("a[href*='/en/product/']")
-                        name_el = card.select_one("[class*='product-name'], [class*='ProductName'], h3")
-                        brand_el = card.select_one("[class*='brand'], [class*='Brand']")
-                        price_el = card.select_one("[class*='sale-price'], [class*='price-sale'], [class*='currentPrice']")
-                        orig_el = card.select_one("[class*='original-price'], [class*='was-price'], [class*='regularPrice']")
-                        img_el = card.select_one("img")
-
-                        if not link or not name_el:
+                        name_el = card.query_selector('[class*="title"], [class*="name"], h3, h4')
+                        name = name_el.inner_text().strip() if name_el else ""
+                        if not name:
                             continue
 
-                        href = link.get("href", "")
-                        product_url = href if href.startswith("http") else f"https://www.mec.ca{href}"
-                        image_url = None
-                        if img_el:
-                            image_url = img_el.get("src") or img_el.get("data-src")
+                        link_el = card.query_selector("a[href]")
+                        href = link_el.get_attribute("href") if link_el else ""
+                        url = href if href.startswith("http") else BASE + href
+
+                        img_el = card.query_selector("img")
+                        image_url = img_el.get_attribute("src") if img_el else None
+
+                        price_els = card.query_selector_all('[class*="price"], [class*="Price"]')
+                        price_texts = [el.inner_text().strip() for el in price_els if el.inner_text().strip()]
+
+                        price = None
+                        sale_price = None
+                        if len(price_texts) >= 2:
+                            price = parse_price(price_texts[0])
+                            sale_price = parse_price(price_texts[1])
+                        elif len(price_texts) == 1:
+                            price = parse_price(price_texts[0])
+
+                        if price is None:
+                            continue
+
+                        brand_el = card.query_selector('[class*="brand"], [class*="vendor"]')
+                        brand = brand_el.inner_text().strip() if brand_el else ""
 
                         products.append({
-                            "name": name_el.get_text(strip=True),
-                            "brand": brand_el.get_text(strip=True) if brand_el else "",
-                            "url": product_url,
+                            "name": name,
+                            "brand": brand,
+                            "url": url,
                             "image_url": image_url,
-                            "price": orig_el.get_text(strip=True) if orig_el else price_el.get_text(strip=True) if price_el else None,
-                            "sale_price": price_el.get_text(strip=True) if orig_el else None,
-                            "in_stock": card.select_one("[class*='sold-out'], [class*='outOfStock']") is None,
+                            "price": price,
+                            "sale_price": sale_price,
+                            "in_stock": True,
                             "category": "road",
                         })
                     except Exception as e:
-                        print(f"[MEC] Card parse error: {e}")
+                        print(f"[MEC] Product parse error: {e}")
 
-                if len(cards) < 48:
-                    break
-                page += 1
-                random_delay()
+            finally:
+                browser.close()
 
         return products
