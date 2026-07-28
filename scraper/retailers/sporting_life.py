@@ -1,12 +1,13 @@
 """
-Sporting Life scraper — medium complexity, uses httpx + BeautifulSoup.
+Sporting Life scraper — uses httpx + BeautifulSoup.
 """
 import random
 import httpx
 from bs4 import BeautifulSoup
 from base_scraper import BaseScraper, random_delay, USER_AGENTS
 
-BASE_URL = "https://www.sportinglife.ca/en-CA/footwear/running-shoes"
+BASE = "https://www.sportinglife.ca"
+CATEGORY_URL = f"{BASE}/en-CA/running/footwear/"
 
 
 class SportingLifeScraper(BaseScraper):
@@ -19,11 +20,12 @@ class SportingLifeScraper(BaseScraper):
     def scrape(self) -> list[dict]:
         products = []
         headers = {"User-Agent": random.choice(USER_AGENTS)}
-        page = 1
+        start = 0
+        page_size = 48
 
         with httpx.Client(headers=headers, follow_redirects=True, timeout=20) as client:
             while True:
-                url = f"{BASE_URL}?start={(page - 1) * 48}&sz=48"
+                url = f"{CATEGORY_URL}?start={start}&sz={page_size}"
                 resp = client.get(url)
                 resp.raise_for_status()
                 soup = BeautifulSoup(resp.text, "lxml")
@@ -34,7 +36,7 @@ class SportingLifeScraper(BaseScraper):
 
                 for card in cards:
                     try:
-                        link = card.select_one("a.thumb-link, a[data-pid], a[href*='/footwear/']")
+                        link = card.select_one("a.thumb-link, a[data-pid], a[href*='/footwear/'], a[href*='/running/']")
                         name_el = card.select_one(".product-name, .tile-name, h3.name")
                         brand_el = card.select_one(".brand, .tile-brand")
                         price_el = card.select_one(".price-sales, .sale-price, .now-price")
@@ -45,7 +47,7 @@ class SportingLifeScraper(BaseScraper):
                             continue
 
                         href = link.get("href", "")
-                        product_url = href if href.startswith("http") else f"https://www.sportinglife.ca{href}"
+                        product_url = href if href.startswith("http") else f"{BASE}{href}"
                         image_url = img_el.get("src") or img_el.get("data-src") if img_el else None
 
                         products.append({
@@ -61,10 +63,9 @@ class SportingLifeScraper(BaseScraper):
                     except Exception as e:
                         print(f"[Sporting Life] Card parse error: {e}")
 
-                # Stop if fewer results than a full page
-                if len(cards) < 48:
+                if len(cards) < page_size:
                     break
-                page += 1
+                start += page_size
                 random_delay()
 
         return products
