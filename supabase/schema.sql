@@ -70,30 +70,49 @@ create index if not exists idx_watchlist_user
 
 alter table watchlist enable row level security;
 
-create policy "Users can read their own watchlist"
-  on watchlist for select
-  using (auth.uid() = user_id);
+do $$ begin
+  create policy "Users can read their own watchlist"
+    on watchlist for select using (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
 
-create policy "Users can insert into their own watchlist"
-  on watchlist for insert
-  with check (auth.uid() = user_id);
+do $$ begin
+  create policy "Users can insert into their own watchlist"
+    on watchlist for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
 
-create policy "Users can delete their own watchlist items"
-  on watchlist for delete
-  using (auth.uid() = user_id);
+do $$ begin
+  create policy "Users can delete their own watchlist items"
+    on watchlist for delete using (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
 
-create policy "Users can update their own watchlist items"
-  on watchlist for update
-  using (auth.uid() = user_id);
+do $$ begin
+  create policy "Users can update their own watchlist items"
+    on watchlist for update using (auth.uid() = user_id);
+exception when duplicate_object then null;
+end $$;
 
 -- Public read on products, retailers, price_history (no PII)
 alter table products enable row level security;
 alter table retailers enable row level security;
 alter table price_history enable row level security;
 
-create policy "Public read products" on products for select using (true);
-create policy "Public read retailers" on retailers for select using (true);
-create policy "Public read price_history" on price_history for select using (true);
+do $$ begin
+  create policy "Public read products" on products for select using (true);
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create policy "Public read retailers" on retailers for select using (true);
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create policy "Public read price_history" on price_history for select using (true);
+exception when duplicate_object then null;
+end $$;
 
 -- Service role can write everything (used by scrapers only)
 -- No additional policies needed — service role bypasses RLS.
