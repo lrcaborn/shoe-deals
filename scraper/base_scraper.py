@@ -73,7 +73,7 @@ def send_developer_alert(subject: str, body: str):
         return
     try:
         resend.Emails.send({
-            "from": "alerts@gtarunningdeals.ca",
+            "from": "onboarding@resend.dev",
             "to": DEVELOPER_ALERT_EMAIL,
             "subject": subject,
             "text": body,

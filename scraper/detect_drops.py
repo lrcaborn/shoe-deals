@@ -9,7 +9,7 @@ from base_scraper import get_supabase, send_developer_alert
 import resend
 
 resend.api_key = os.environ.get("RESEND_API_KEY", "")
-FROM_EMAIL = "alerts@gtarunningdeals.ca"
+FROM_EMAIL = "onboarding@resend.dev"
 DROP_THRESHOLD_PCT = 20.0
 
 
