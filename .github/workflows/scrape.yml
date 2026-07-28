@@ -10,7 +10,7 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    environment: runshoesrun
+    environment: Production - runshoesrun
 
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
